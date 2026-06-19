@@ -1,37 +1,37 @@
-import type { Tool } from "@modelcontextprotocol/sdk/types.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 
-export const TOOL_NAME_SEP = "__";
+export const TOOL_NAME_SEP = "__"
 
 export interface OpenAITool {
-	type: "function";
+	type: "function"
 	function: {
-		name: string;
-		description?: string;
-		parameters: Record<string, unknown>;
-	};
+		name: string
+		description?: string
+		parameters: Record<string, unknown>
+	}
 }
 
 export function qualifyToolName(server: string, tool: string): string {
-	return `${server}${TOOL_NAME_SEP}${tool}`;
+	return `${server}${TOOL_NAME_SEP}${tool}`
 }
 
 export function parseToolName(qualified: string): {
-	server: string;
-	tool: string;
+	server: string
+	tool: string
 } {
-	const idx = qualified.indexOf(TOOL_NAME_SEP);
+	const idx = qualified.indexOf(TOOL_NAME_SEP)
 	if (idx === -1)
-		throw new Error(`ツール名にセパレータがありません: ${qualified}`);
+		throw new Error(`ツール名にセパレータがありません: ${qualified}`)
 	return {
 		server: qualified.slice(0, idx),
 		tool: qualified.slice(idx + TOOL_NAME_SEP.length),
-	};
+	}
 }
 
 export function toOpenAITools(
 	toolsByServer: Map<string, Tool[]>,
 ): OpenAITool[] {
-	const out: OpenAITool[] = [];
+	const out: OpenAITool[] = []
 	for (const [server, tools] of toolsByServer) {
 		for (const tool of tools) {
 			out.push({
@@ -43,8 +43,8 @@ export function toOpenAITools(
 						type: "object",
 					},
 				},
-			});
+			})
 		}
 	}
-	return out;
+	return out
 }
