@@ -1,0 +1,13 @@
+services:
+  gateway:
+    build: .
+    ports:
+      - "8787:8787"
+    env_file:
+      - .env
+    volumes:
+      # filesystem-mcp が操作する対象ディレクトリ。ホストの ./data をコンテナの /data へ
+      - ./data:/data
+    extra_hosts:
+      # ホスト上の llama-server を host.docker.internal で参照できるように
+      - "host.docker.internal:host-gateway"
