@@ -5,7 +5,9 @@ const names = ["filesystem__read_file", "brave__web_search"];
 
 // OLD: server名の名指しで強制する → NEW: server名だけでは強制しない
 test("server名だけでは強制しない（auto を返す）", () => {
-  expect(resolveToolChoice("braveを使って東京の天気を調べて", names)).toBe("auto");
+  expect(resolveToolChoice("braveを使って東京の天気を調べて", names)).toBe(
+    "auto",
+  );
 });
 
 test("server名だけでは強制しない（大文字）", () => {

@@ -1,12 +1,16 @@
-import { expect, test } from "vitest";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
+import { expect, test } from "vitest";
 import { parseToolName, qualifyToolName, toOpenAITools } from "./tools.js";
 
 const fsTools: Tool[] = [
   {
     name: "read_file",
     description: "Read a file",
-    inputSchema: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+    inputSchema: {
+      type: "object",
+      properties: { path: { type: "string" } },
+      required: ["path"],
+    },
   },
 ];
 
@@ -17,7 +21,10 @@ test("qualify と parse は往復する", () => {
 });
 
 test("ツール名にセパレータが含まれても tool 側に残す", () => {
-  expect(parseToolName("fs__read__file")).toEqual({ server: "fs", tool: "read__file" });
+  expect(parseToolName("fs__read__file")).toEqual({
+    server: "fs",
+    tool: "read__file",
+  });
 });
 
 test("MCPツールを OpenAI tools 形式へ変換する", () => {
@@ -29,7 +36,11 @@ test("MCPツールを OpenAI tools 形式へ変換する", () => {
       function: {
         name: "filesystem__read_file",
         description: "Read a file",
-        parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+        parameters: {
+          type: "object",
+          properties: { path: { type: "string" } },
+          required: ["path"],
+        },
       },
     },
   ]);

@@ -34,7 +34,9 @@ export class McpRegistry {
         const { tools } = await client.listTools();
         children.set(name, { client, tools });
       } catch (e) {
-        logger.warn(`子MCP "${name}" の起動に失敗したため無効化します: ${(e as Error).message}`);
+        logger.warn(
+          `子MCP "${name}" の起動に失敗したため無効化します: ${(e as Error).message}`,
+        );
       }
     }
     return new McpRegistry(children);
@@ -46,11 +48,18 @@ export class McpRegistry {
     return out;
   }
 
-  async callTool(server: string, tool: string, args: Record<string, unknown>): Promise<string> {
+  async callTool(
+    server: string,
+    tool: string,
+    args: Record<string, unknown>,
+  ): Promise<string> {
     const child = this.children.get(server);
     if (!child) return `error: 子MCP "${server}" は存在しません`;
     try {
-      const result = await child.client.callTool({ name: tool, arguments: args });
+      const result = await child.client.callTool({
+        name: tool,
+        arguments: args,
+      });
       const text = Array.isArray(result.content)
         ? result.content
             .map((c) => (c.type === "text" ? c.text : JSON.stringify(c)))

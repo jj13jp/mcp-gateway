@@ -12,7 +12,10 @@ beforeAll(async () => {
   dir = mkdtempSync(join(tmpdir(), "mcp-gw-"));
   writeFileSync(join(dir, "hello.txt"), "world");
   registry = await McpRegistry.start({
-    filesystem: { command: "npx", args: ["-y", "@modelcontextprotocol/server-filesystem", dir] },
+    filesystem: {
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-filesystem", dir],
+    },
   });
 }, 60_000);
 
@@ -27,7 +30,9 @@ test("子MCPのツールを集約する", () => {
 });
 
 test("ツールを実行できる", async () => {
-  const result = await registry.callTool("filesystem", "read_file", { path: join(dir, "hello.txt") });
+  const result = await registry.callTool("filesystem", "read_file", {
+    path: join(dir, "hello.txt"),
+  });
   expect(result).toContain("world");
 });
 

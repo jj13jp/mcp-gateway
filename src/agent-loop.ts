@@ -20,10 +20,17 @@ export interface ChatCompletion {
 }
 
 export interface LlamaClient {
-  chat(req: { messages: ChatMessage[]; tools: OpenAITool[]; tool_choice: ToolChoice }): Promise<ChatCompletion>;
+  chat(req: {
+    messages: ChatMessage[];
+    tools: OpenAITool[];
+    tool_choice: ToolChoice;
+  }): Promise<ChatCompletion>;
 }
 
-export type ExecuteTool = (qualifiedName: string, args: Record<string, unknown>) => Promise<string>;
+export type ExecuteTool = (
+  qualifiedName: string,
+  args: Record<string, unknown>,
+) => Promise<string>;
 
 export async function runAgentLoop(params: {
   messages: ChatMessage[];
@@ -39,7 +46,11 @@ export async function runAgentLoop(params: {
   let last: ChatCompletion | undefined;
 
   for (let i = 0; i < maxIterations; i++) {
-    const completion = await llama.chat({ messages, tools, tool_choice: toolChoice });
+    const completion = await llama.chat({
+      messages,
+      tools,
+      tool_choice: toolChoice,
+    });
     last = completion;
     toolChoice = "auto";
 
@@ -53,7 +64,9 @@ export async function runAgentLoop(params: {
     for (const call of calls) {
       let args: Record<string, unknown> = {};
       try {
-        args = call.function.arguments ? JSON.parse(call.function.arguments) : {};
+        args = call.function.arguments
+          ? JSON.parse(call.function.arguments)
+          : {};
       } catch {
         args = {};
       }

@@ -19,10 +19,15 @@ export function createApp(deps: {
     const tools = toOpenAITools(registry.listTools());
     const toolNames = tools.map((t) => t.function.name);
 
-    const lastUser = [...body.messages].reverse().find((m) => m.role === "user");
+    const lastUser = [...body.messages]
+      .reverse()
+      .find((m) => m.role === "user");
     const toolChoice = resolveToolChoice(lastUser?.content ?? "", toolNames);
 
-    const executeTool = async (qualified: string, args: Record<string, unknown>) => {
+    const executeTool = async (
+      qualified: string,
+      args: Record<string, unknown>,
+    ) => {
       const { server, tool } = parseToolName(qualified);
       return registry.callTool(server, tool, args);
     };

@@ -1,7 +1,14 @@
 import { expect, test, vi } from "vitest";
-import { type ChatCompletion, type LlamaClient, runAgentLoop } from "./agent-loop.js";
+import {
+  type ChatCompletion,
+  type LlamaClient,
+  runAgentLoop,
+} from "./agent-loop.js";
 
-function completion(message: ChatCompletion["choices"][0]["message"], finish = "stop"): ChatCompletion {
+function completion(
+  message: ChatCompletion["choices"][0]["message"],
+  finish = "stop",
+): ChatCompletion {
   return { choices: [{ message, finish_reason: finish }] };
 }
 
@@ -15,13 +22,22 @@ test("tool_calls→実行→最終回答のループ", async () => {
             role: "assistant",
             content: null,
             tool_calls: [
-              { id: "c1", type: "function", function: { name: "filesystem__read_file", arguments: '{"path":"/data/a"}' } },
+              {
+                id: "c1",
+                type: "function",
+                function: {
+                  name: "filesystem__read_file",
+                  arguments: '{"path":"/data/a"}',
+                },
+              },
             ],
           },
           "tool_calls",
         ),
       )
-      .mockResolvedValueOnce(completion({ role: "assistant", content: "中身はworldです" })),
+      .mockResolvedValueOnce(
+        completion({ role: "assistant", content: "中身はworldです" }),
+      ),
   };
   const executeTool = vi.fn().mockResolvedValue("world");
 
@@ -34,7 +50,9 @@ test("tool_calls→実行→最終回答のループ", async () => {
     maxIterations: 5,
   });
 
-  expect(executeTool).toHaveBeenCalledWith("filesystem__read_file", { path: "/data/a" });
+  expect(executeTool).toHaveBeenCalledWith("filesystem__read_file", {
+    path: "/data/a",
+  });
   expect(result.choices[0].message.content).toBe("中身はworldです");
 });
 
@@ -46,7 +64,13 @@ test("初回のみ tool_choice を渡し、2回目は auto", async () => {
         {
           role: "assistant",
           content: null,
-          tool_calls: [{ id: "c1", type: "function", function: { name: "brave__web_search", arguments: "{}" } }],
+          tool_calls: [
+            {
+              id: "c1",
+              type: "function",
+              function: { name: "brave__web_search", arguments: "{}" },
+            },
+          ],
         },
         "tool_calls",
       ),
@@ -63,7 +87,10 @@ test("初回のみ tool_choice を渡し、2回目は auto", async () => {
     maxIterations: 5,
   });
 
-  expect(chat.mock.calls[0][0].tool_choice).toEqual({ type: "function", function: { name: "brave__web_search" } });
+  expect(chat.mock.calls[0][0].tool_choice).toEqual({
+    type: "function",
+    function: { name: "brave__web_search" },
+  });
   expect(chat.mock.calls[1][0].tool_choice).toBe("auto");
 });
 
@@ -72,7 +99,13 @@ test("反復上限で打ち切る", async () => {
     {
       role: "assistant",
       content: null,
-      tool_calls: [{ id: "c1", type: "function", function: { name: "filesystem__read_file", arguments: "{}" } }],
+      tool_calls: [
+        {
+          id: "c1",
+          type: "function",
+          function: { name: "filesystem__read_file", arguments: "{}" },
+        },
+      ],
     },
     "tool_calls",
   );
@@ -100,12 +133,20 @@ test("ツールエラーも結果として渡して継続する", async () => {
           {
             role: "assistant",
             content: null,
-            tool_calls: [{ id: "c1", type: "function", function: { name: "filesystem__read_file", arguments: "{}" } }],
+            tool_calls: [
+              {
+                id: "c1",
+                type: "function",
+                function: { name: "filesystem__read_file", arguments: "{}" },
+              },
+            ],
           },
           "tool_calls",
         ),
       )
-      .mockResolvedValueOnce(completion({ role: "assistant", content: "ごめんなさい" })),
+      .mockResolvedValueOnce(
+        completion({ role: "assistant", content: "ごめんなさい" }),
+      ),
   };
   const executeTool = vi.fn().mockResolvedValue("error: not found");
 

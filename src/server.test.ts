@@ -7,7 +7,16 @@ function fakeRegistry(): McpRegistry {
   return {
     listTools: () =>
       new Map([
-        ["filesystem", [{ name: "read_file", description: "read", inputSchema: { type: "object" } }]],
+        [
+          "filesystem",
+          [
+            {
+              name: "read_file",
+              description: "read",
+              inputSchema: { type: "object" },
+            },
+          ],
+        ],
       ]),
     callTool: vi.fn().mockResolvedValue("world"),
     close: vi.fn(),
@@ -25,7 +34,14 @@ test("POST /v1/chat/completions が最終回答を返す", async () => {
               role: "assistant",
               content: null,
               tool_calls: [
-                { id: "c1", type: "function", function: { name: "filesystem__read_file", arguments: '{"path":"/data/x"}' } },
+                {
+                  id: "c1",
+                  type: "function",
+                  function: {
+                    name: "filesystem__read_file",
+                    arguments: '{"path":"/data/x"}',
+                  },
+                },
               ],
             },
             finish_reason: "tool_calls",
@@ -33,15 +49,27 @@ test("POST /v1/chat/completions が最終回答を返す", async () => {
         ],
       })
       .mockResolvedValueOnce({
-        choices: [{ message: { role: "assistant", content: "worldでした" }, finish_reason: "stop" }],
+        choices: [
+          {
+            message: { role: "assistant", content: "worldでした" },
+            finish_reason: "stop",
+          },
+        ],
       }),
   };
 
-  const app = createApp({ registry: fakeRegistry(), llama, maxToolIterations: 5 });
+  const app = createApp({
+    registry: fakeRegistry(),
+    llama,
+    maxToolIterations: 5,
+  });
   const res = await app.request("/v1/chat/completions", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ model: "local", messages: [{ role: "user", content: "read_fileで読んで" }] }),
+    body: JSON.stringify({
+      model: "local",
+      messages: [{ role: "user", content: "read_fileで読んで" }],
+    }),
   });
 
   expect(res.status).toBe(200);

@@ -9,7 +9,11 @@ async function main() {
   const config = loadConfig();
   const registry = await McpRegistry.start(config.servers);
   const llama = createLlamaClient(config.llamaBaseUrl);
-  const app = createApp({ registry, llama, maxToolIterations: config.maxToolIterations });
+  const app = createApp({
+    registry,
+    llama,
+    maxToolIterations: config.maxToolIterations,
+  });
 
   const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
     console.log(`mcp-gateway listening on :${info.port}`);
