@@ -1,45 +1,31 @@
 // src/server.ts
 import { Hono } from "hono"
-import type { ChatMessage, LlamaClient } from "./agent-loop.js"
-import { runAgentLoop } from "./agent-loop.js"
+import { cors } from "hono/cors"
 import type { McpRegistry } from "./mcp-registry.js"
-import { resolveToolChoice } from "./tool-choice.js"
-import { parseToolName, toOpenAITools } from "./tools.js"
+import { handleMcpMessage } from "./mcp-server.js"
 
 export function createApp(deps: {
 	registry: McpRegistry
-	llama: LlamaClient
-	maxToolIterations: number
+	corsOrigins: string[]
 }): Hono {
-	const { registry, llama, maxToolIterations } = deps
+	const { registry, corsOrigins } = deps
 	const app = new Hono()
 
-	app.post("/v1/chat/completions", async (c) => {
-		const body = await c.req.json<{ messages: ChatMessage[] }>()
-		const tools = toOpenAITools(registry.listTools())
-		const toolNames = tools.map((t) => t.function.name)
+	app.use(
+		"/mcp",
+		cors({
+			origin: (o) => (corsOrigins.includes(o) ? o : null),
+			allowMethods: ["POST", "OPTIONS"],
+			allowHeaders: ["Content-Type"],
+			credentials: false,
+		}),
+	)
 
-		const lastUser = [...body.messages].reverse().find((m) => m.role === "user")
-		const toolChoice = resolveToolChoice(lastUser?.content ?? "", toolNames)
-
-		const executeTool = async (
-			qualified: string,
-			args: Record<string, unknown>,
-		) => {
-			const { server, tool } = parseToolName(qualified)
-			return registry.callTool(server, tool, args)
-		}
-
-		const result = await runAgentLoop({
-			messages: body.messages,
-			tools,
-			toolChoice,
-			llama,
-			executeTool,
-			maxIterations: maxToolIterations,
-		})
-
-		return c.json(result)
+	app.post("/mcp", async (c) => {
+		const body = await c.req.json()
+		const response = await handleMcpMessage(body, registry)
+		if (response === null) return new Response(null, { status: 202 })
+		return c.json(response)
 	})
 
 	return app

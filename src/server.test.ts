@@ -18,66 +18,79 @@ function fakeRegistry(): McpRegistry {
 					],
 				],
 			]),
-		callTool: vi.fn().mockResolvedValue("world"),
+		callTool: vi.fn().mockResolvedValue("file content"),
 		close: vi.fn(),
 	} as unknown as McpRegistry
 }
 
-test("POST /v1/chat/completions が最終回答を返す", async () => {
-	const llama = {
-		chat: vi
-			.fn()
-			.mockResolvedValueOnce({
-				choices: [
-					{
-						message: {
-							role: "assistant",
-							content: null,
-							tool_calls: [
-								{
-									id: "c1",
-									type: "function",
-									function: {
-										name: "filesystem__read_file",
-										arguments: '{"path":"/data/x"}',
-									},
-								},
-							],
-						},
-						finish_reason: "tool_calls",
-					},
-				],
-			})
-			.mockResolvedValueOnce({
-				choices: [
-					{
-						message: { role: "assistant", content: "worldでした" },
-						finish_reason: "stop",
-					},
-				],
-			}),
-	}
-
-	const app = createApp({
-		registry: fakeRegistry(),
-		llama,
-		maxToolIterations: 5,
-	})
-	const res = await app.request("/v1/chat/completions", {
+test("initialize リクエストがサーバー情報を返す", async () => {
+	const app = createApp({ registry: fakeRegistry(), corsOrigins: [] })
+	const res = await app.request("/mcp", {
 		method: "POST",
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify({
-			model: "local",
-			messages: [{ role: "user", content: "read_fileで読んで" }],
+			jsonrpc: "2.0",
+			id: 1,
+			method: "initialize",
+			params: {
+				protocolVersion: "2024-11-05",
+				capabilities: {},
+				clientInfo: { name: "test", version: "0" },
+			},
 		}),
 	})
-
 	expect(res.status).toBe(200)
 	const json = await res.json()
-	expect(json.choices[0].message.content).toBe("worldでした")
-	// 名指し(read_file)で初回 tool_choice が固定されること
-	expect(llama.chat.mock.calls[0][0].tool_choice).toEqual({
-		type: "function",
-		function: { name: "filesystem__read_file" },
+	expect(json.result.serverInfo.name).toBe("mcp-gateway")
+	expect(json.result.capabilities.tools).toBeDefined()
+})
+
+test("tools/list が全ツールを返す", async () => {
+	const app = createApp({ registry: fakeRegistry(), corsOrigins: [] })
+	const res = await app.request("/mcp", {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
 	})
+	expect(res.status).toBe(200)
+	const json = await res.json()
+	expect(json.result.tools).toHaveLength(1)
+	expect(json.result.tools[0].name).toBe("filesystem__read_file")
+})
+
+test("tools/call がツールを実行して結果を返す", async () => {
+	const registry = fakeRegistry()
+	const app = createApp({ registry, corsOrigins: [] })
+	const res = await app.request("/mcp", {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({
+			jsonrpc: "2.0",
+			id: 3,
+			method: "tools/call",
+			params: {
+				name: "filesystem__read_file",
+				arguments: { path: "/data/x" },
+			},
+		}),
+	})
+	expect(res.status).toBe(200)
+	const json = await res.json()
+	expect(json.result.content[0].text).toBe("file content")
+	expect(registry.callTool).toHaveBeenCalledWith("filesystem", "read_file", {
+		path: "/data/x",
+	})
+})
+
+test("通知は 204 を返す", async () => {
+	const app = createApp({ registry: fakeRegistry(), corsOrigins: [] })
+	const res = await app.request("/mcp", {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({
+			jsonrpc: "2.0",
+			method: "notifications/initialized",
+		}),
+	})
+	expect(res.status).toBe(202)
 })

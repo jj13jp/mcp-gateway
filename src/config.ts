@@ -9,9 +9,8 @@ export interface ChildServerConfig {
 
 export interface GatewayConfig {
 	servers: Record<string, ChildServerConfig>
-	llamaBaseUrl: string
 	port: number
-	maxToolIterations: number
+	corsOrigins: string[]
 }
 
 const childServerSchema = z.object({
@@ -49,15 +48,12 @@ export function loadConfig(opts?: {
 	}
 	const servers = serversSchema.parse(parsedJson)
 
-	const llamaBaseUrl = env.LLAMA_BASE_URL
-	if (!llamaBaseUrl) throw new Error("環境変数 LLAMA_BASE_URL が必要です")
-
 	const port = parseIntEnv(env.PORT, 8787, "PORT")
-	const maxToolIterations = parseIntEnv(
-		env.MAX_TOOL_ITERATIONS,
-		8,
-		"MAX_TOOL_ITERATIONS",
-	)
+	const corsOrigins = env.CORS_ORIGINS
+		? env.CORS_ORIGINS.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean)
+		: ["http://localhost:8080", "http://127.0.0.1:8080"]
 
-	return { servers, llamaBaseUrl, port, maxToolIterations }
+	return { servers, port, corsOrigins }
 }

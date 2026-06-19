@@ -1,22 +1,30 @@
 # mcp-gateway
 
-llama-server 向けの OpenAI互換ゲートウェイ。`/v1/chat/completions` を受け、裏で子MCP（まず filesystem）を束ねてツール実行ループを回す。
+複数の子 MCP サーバーを束ねて、単一の MCP サーバーとして公開するゲートウェイ。
 
 ## 仕組み
 
-クライアント → `/v1/chat/completions` → ゲートウェイが子MCPのツールを付けて llama-server に転送 → `tool_calls` が返ればMCPを実行して結果を会話に戻す → 最終回答まで繰り返す（反復上限 `MAX_TOOL_ITERATIONS`）。
+llama-server（または任意の MCP クライアント）が `POST /mcp` に接続し、ツール一覧取得・実行を行う。ゲートウェイは子 MCP サーバー群にリクエストをルーティングし、結果を返す。
+
+```
+MCPクライアント（llama-server など）
+        ↓ MCP over HTTP (POST /mcp)
+   mcp-gateway :8787
+     ↙    ↓    ↘
+ filesystem  brave  ...子MCPサーバー群
+```
 
 ## セットアップ
 
 ```bash
-cp .env.example .env   # LLAMA_BASE_URL などを編集
+cp .env.example .env   # 必要に応じて PORT を変更
 mkdir -p data          # filesystem-mcp の対象ディレクトリ
 docker compose up --build
 ```
 
-## 子MCPの追加
+## 子 MCP サーバーの追加
 
-`servers.json`（プロジェクトルート。`data/` の中ではない）にブロックを足すだけ:
+`servers.json`（プロジェクトルート。`data/` の中ではない）にブロックを追加するだけ:
 
 ```json
 {
@@ -25,12 +33,29 @@ docker compose up --build
 }
 ```
 
-## 動作確認
+## MCP エンドポイント
+
+| メソッド | パス   | 説明                             |
+| -------- | ------ | -------------------------------- |
+| POST     | `/mcp` | MCP JSON-RPC（リクエスト・通知） |
+
+### 動作確認
 
 ```bash
-curl http://localhost:8787/v1/chat/completions \
+# initialize
+curl http://localhost:8787/mcp \
   -H 'content-type: application/json' \
-  -d '{"model":"local","messages":[{"role":"user","content":"read_file で /data/hello.txt を読んで"}]}'
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0"}}}'
+
+# tools/list
+curl http://localhost:8787/mcp \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+
+# tools/call（ツール名は <サーバー名>__<ツール名> の形式）
+curl http://localhost:8787/mcp \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"filesystem__read_file","arguments":{"path":"/data/hello.txt"}}}'
 ```
 
 ## 開発
@@ -40,4 +65,9 @@ pnpm install
 pnpm test     # vitest
 pnpm lint     # biome
 pnpm dev      # tsx で起動
+```
+## 起動
+
+```bash
+./llama-server -m model.gguf --ui-mcp-proxy
 ```
