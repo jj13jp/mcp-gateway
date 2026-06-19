@@ -22,6 +22,13 @@ const childServerSchema = z.object({
 
 const serversSchema = z.record(childServerSchema);
 
+function parseIntEnv(value: string | undefined, fallback: number, name: string): number {
+  if (value === undefined) return fallback;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n <= 0) throw new Error(`環境変数 ${name} は正の整数である必要があります: ${value}`);
+  return n;
+}
+
 export function loadConfig(opts?: {
   serversJson?: string;
   env?: Record<string, string | undefined>;
@@ -40,8 +47,8 @@ export function loadConfig(opts?: {
   const llamaBaseUrl = env.LLAMA_BASE_URL;
   if (!llamaBaseUrl) throw new Error("環境変数 LLAMA_BASE_URL が必要です");
 
-  const port = env.PORT ? Number(env.PORT) : 8787;
-  const maxToolIterations = env.MAX_TOOL_ITERATIONS ? Number(env.MAX_TOOL_ITERATIONS) : 8;
+  const port = parseIntEnv(env.PORT, 8787, "PORT");
+  const maxToolIterations = parseIntEnv(env.MAX_TOOL_ITERATIONS, 8, "MAX_TOOL_ITERATIONS");
 
   return { servers, llamaBaseUrl, port, maxToolIterations };
 }

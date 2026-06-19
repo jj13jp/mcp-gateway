@@ -31,3 +31,15 @@ test("PORT/MAX_TOOL_ITERATIONS は既定値を持つ", () => {
   expect(cfg.port).toBe(8787);
   expect(cfg.maxToolIterations).toBe(8);
 });
+
+test("PORT に非数値が渡されると例外", () => {
+  expect(() =>
+    loadConfig({ serversJson: validServers, env: { LLAMA_BASE_URL: "http://x", PORT: "abc" } }),
+  ).toThrow();
+});
+
+test("MAX_TOOL_ITERATIONS に非数値が渡されると例外", () => {
+  expect(() =>
+    loadConfig({ serversJson: validServers, env: { LLAMA_BASE_URL: "http://x", MAX_TOOL_ITERATIONS: "abc" } }),
+  ).toThrow();
+});
