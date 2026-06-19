@@ -2,6 +2,12 @@
 
 複数の子 MCP サーバーを束ねて、単一の MCP サーバーとして公開するゲートウェイ。
 
+## 起動
+
+```bash
+llama-server -m model.gguf --ui-mcp-proxy
+```
+
 ## 仕組み
 
 llama-server（または任意の MCP クライアント）が `POST /mcp` に接続し、ツール一覧取得・実行を行う。ゲートウェイは子 MCP サーバー群にリクエストをルーティングし、結果を返す。
@@ -65,9 +71,4 @@ pnpm install
 pnpm test     # vitest
 pnpm lint     # biome
 pnpm dev      # tsx で起動
-```
-## 起動
-
-```bash
-./llama-server -m model.gguf --ui-mcp-proxy
 ```
