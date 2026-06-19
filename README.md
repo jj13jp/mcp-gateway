@@ -16,7 +16,7 @@ docker compose up --build
 
 ## 子MCPの追加
 
-`servers.json` にブロックを足すだけ:
+`servers.json`（プロジェクトルート。`data/` の中ではない）にブロックを足すだけ:
 
 ```json
 {
